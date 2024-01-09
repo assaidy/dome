@@ -5,7 +5,7 @@ import json
 import os
 from typing import List
 
-FILE_PATH = f"{os.path.expanduser('~')}/.local/share/dome/tasks.json"
+FILENAME = f"{os.path.expanduser('~')}/.local/share/dome/tasks.json"
 
 
 class Task:
@@ -29,18 +29,15 @@ def display_bar(window, y: int, width: int, text: str):
 
 
 def load_tasks() -> List[Task]:
-   if os.path.exists(FILE_PATH) and os.path.getsize(FILE_PATH) > 0:
-       with open(FILE_PATH, 'r') as file:
-           return [Task(**task) for task in json.load(file)]
-   else:
-       with open(FILE_PATH, 'w') as file:
-           json.dump([], file)
-       return []
-
+    try:
+        with open(FILENAME, 'r') as file:
+            return [Task(**task) for task in json.load(file)]
+    except FileNotFoundError:
+        return []
 
 
 def save_tasks(tasks: List[Task]):
-    with open(FILE_PATH, 'w') as file:
+    with open(FILENAME, 'w') as file:
         json.dump([task.__dict__ for task in tasks], file, indent=4)
 
 
@@ -57,24 +54,10 @@ def prompt_for_task_name(window, prompt: str, width: int, height: int) -> str:
     window.addstr(prompt_y, 0, prompt)
     curses.curs_set(1)  # Make cursor visible
     curses.echo()
-
-    # Capture input with the ability to cancel with the Escape key
-    task_name = []
-    while True:
-        ch = window.getch()
-        if ch == 27:  # Escape key
-            curses.noecho()
-            curses.curs_set(0)
-            return None
-        elif ch in (curses.KEY_ENTER, 10, 13):  # Enter key
-            break
-        else:
-            task_name.append(chr(ch))
-            window.addch(ch)
-
+    task_name = window.getstr().decode('utf-8').strip()
     curses.noecho()
     curses.curs_set(0)  # Hide cursor again
-    return ''.join(task_name).strip()
+    return task_name
 
 
 def main(stdscr):
@@ -100,8 +83,7 @@ def main(stdscr):
 
         task_list = todos if tab == "todo" else dones
         for i, task in enumerate(task_list):
-            text_format = curses.color_pair(
-                1) if selected_idx == i else curses.A_NORMAL
+            text_format = curses.color_pair(1) if selected_idx == i else curses.A_NORMAL
             window.addstr(4 + i, 0, task.__repr__(), text_format)
 
         ch = window.getch()
@@ -120,15 +102,19 @@ def main(stdscr):
         elif ch == ord('a') and tab == "todo":
             task_name = prompt_for_task_name(
                 window, "Enter task name: ", width, height)
-            if task_name is not None:  # Check if the task name is not empty and not cancelled
+            if task_name:  # Check if the task name is not empty
                 tasks.append(Task(task_name))
                 save_tasks(tasks)
         elif ch == ord('r') and task_list:
             task_name = prompt_for_task_name(
                 window, "Enter new task name: ", width, height)
-            if task_name is not None:  # Check if the task name is not empty and not cancelled
+            if task_name:  # Check if the task name is not empty
                 task_list[selected_idx].name = task_name
                 save_tasks(tasks)
+        elif ch == ord('d') and task_list:
+            del task_list[selected_idx]
+            tasks = todos + dones
+            save_tasks(tasks)
         elif ch == ord('q'):
             break
 
