@@ -13,7 +13,7 @@ This is a simple TUI to-do list application implemented in Python using the curs
 ## install
 
 ```bash
-git clone 
+git clone https://github.com/assaidy/dome.git
 cd dome
 chmod +x install.sh
 ./install.sh
