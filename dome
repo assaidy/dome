@@ -43,8 +43,11 @@ def save_tasks(tasks: List[Task]):
     with open(FILENAME, 'w') as file:
         json.dump([task.__dict__ for task in tasks], file, indent=4)
 
+def clear_line(window, line_number):
+    window.move(line_number, 0) # Move to the start of the line
+    window.clrtoeol()  # Clear the line
+    
 
-# FIXME: fix bug with backspace
 def prompt_for_task_name(window, prompt: str, width: int, height: int) -> str:
     separator_y = height - 2  # One line above the last line for the separator
     prompt_y = height - 1  # Last line for the prompt
@@ -54,14 +57,12 @@ def prompt_for_task_name(window, prompt: str, width: int, height: int) -> str:
 
     # Move cursor to the last line and show the prompt
     window.move(prompt_y, 0)
-    # window.clrtoeol()  # Clear the line
-    # window.addstr(prompt_y, 0, f"{prompt} {task_name}")
     curses.curs_set(1)  # Make cursor visible
     curses.echo()
 
     task_name = ""
     while True:
-        window.clrtoeol()  # Clear the line
+        clear_line(window, prompt_y)
         window.addstr(prompt_y, 0, f"{prompt} {task_name}")
         ch = window.getch()
         if ch == ord('\n'):  # Enter key
@@ -69,12 +70,10 @@ def prompt_for_task_name(window, prompt: str, width: int, height: int) -> str:
         elif ch == 27:  # Escape key
             task_name = ""
             break
-        elif ch == ord('\b') or ch == curses.KEY_BACKSPACE:  # Backspace key
+        elif ch == ord('\177'):  # Backspace key
             task_name = task_name[:-1]
         elif ch != -1:  # Ignore any other special keys
             task_name += chr(ch)
-
-    # task_name = window.getstr(prompt_y, len(prompt) + 1, width - len(prompt) - 1).decode()
 
     curses.noecho()
     curses.curs_set(0)  # Hide cursor again
