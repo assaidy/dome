@@ -41,6 +41,7 @@ def save_tasks(tasks: List[Task]):
         json.dump([task.__dict__ for task in tasks], file, indent=4)
 
 
+# FIXME: fix bug with backspace
 def prompt_for_task_name(window, prompt: str, width: int, height: int) -> str:
     separator_y = height - 2  # One line above the last line for the separator
     prompt_y = height - 1  # Last line for the prompt
