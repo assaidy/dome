@@ -50,11 +50,28 @@ def prompt_for_task_name(window, prompt: str, width: int, height: int) -> str:
 
     # Move cursor to the last line and show the prompt
     window.move(prompt_y, 0)
-    window.clrtoeol()  # Clear the line
-    window.addstr(prompt_y, 0, prompt)
+    # window.clrtoeol()  # Clear the line
+    # window.addstr(prompt_y, 0, f"{prompt} {task_name}")
     curses.curs_set(1)  # Make cursor visible
     curses.echo()
-    task_name = window.getstr().decode('utf-8').strip()
+
+    task_name = ""
+    while True:
+        window.clrtoeol()  # Clear the line
+        window.addstr(prompt_y, 0, f"{prompt} {task_name}")
+        ch = window.getch()
+        if ch == ord('\n'):  # Enter key
+            break
+        elif ch == 27:  # Escape key
+            task_name = ""
+            break
+        elif ch == ord('\b') or ch == curses.KEY_BACKSPACE: # Backspace key
+            task_name = task_name[:-1]
+        elif ch != -1:  # Ignore any other special keys
+            task_name += chr(ch)
+
+    # task_name = window.getstr(prompt_y, len(prompt) + 1, width - len(prompt) - 1).decode()
+
     curses.noecho()
     curses.curs_set(0)  # Hide cursor again
     return task_name
@@ -83,7 +100,8 @@ def main(stdscr):
 
         task_list = todos if tab == "todo" else dones
         for i, task in enumerate(task_list):
-            text_format = curses.color_pair(1) if selected_idx == i else curses.A_NORMAL
+            text_format = curses.color_pair(
+                1) if selected_idx == i else curses.A_NORMAL
             window.addstr(4 + i, 0, task.__repr__(), text_format)
 
         ch = window.getch()
@@ -115,6 +133,7 @@ def main(stdscr):
             del task_list[selected_idx]
             tasks = todos + dones
             save_tasks(tasks)
+            selected_idx -= 1
         elif ch == ord('q'):
             break
 
