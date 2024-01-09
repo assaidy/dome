@@ -8,7 +8,7 @@ This is a simple TUI to-do list application implemented in Python using the curs
 - Mark tasks as completed
 - Rename tasks
 - Delete tasks
-- Save tasks to a JSON file
+- File based (chanegs are permanent
 
 ## install
 
