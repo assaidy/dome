@@ -24,8 +24,10 @@ Now type `dome` to run the app.
 
 | Key | Action |
 | --- | --- |
-| `j` | cycle down|
-| `k` | cycle up|
+| `j` | scroll down|
+| `k` | scroll up|
+| `gg` | go top|
+| `G` | go bottom|
 | `Enter` | Toggle the completion status of a task |
 | `a` | Add a new task |
 | `r` | Rename a task |

@@ -43,10 +43,11 @@ def save_tasks(tasks: List[Task]):
     with open(FILENAME, 'w') as file:
         json.dump([task.__dict__ for task in tasks], file, indent=4)
 
+
 def clear_line(window, line_number):
-    window.move(line_number, 0) # Move to the start of the line
+    window.move(line_number, 0)  # Move to the start of the line
     window.clrtoeol()  # Clear the line
-    
+
 
 def prompt_for_task_name(window, prompt: str, width: int, height: int) -> str:
     separator_y = height - 2  # One line above the last line for the separator
@@ -94,26 +95,53 @@ def main(stdscr):
     window = curses.newwin(height, width, 0, 0)
 
     selected_idx = 0
+    top_idx = 0  # Index of the topmost task in the displayed list
     tab = "todo"
 
     while True:
+        
         window.clear()
-        display_bar(window, 0, width,
-                    "[Todo] Done" if tab == "todo" else "Todo [Done]")
+        display_bar(window, 0, width, "Todo" if tab == "todo" else "Done")
 
         task_list = todos if tab == "todo" else dones
-        for i, task in enumerate(task_list):
+        # Calculate the range of tasks to display based on top_idx and window height
+        for i in range(top_idx, min(top_idx + height - 4, len(task_list))):
+            task = task_list[i]
             text_format = curses.color_pair(
                 1) if selected_idx == i else curses.A_NORMAL
-            window.addstr(4 + i, 0, task.__repr__(), text_format)
+            window.addstr(4 + i - top_idx, 0, task.__repr__(), text_format)
 
         # -------------------------------------------- keys --------------------------------------------
         ch = window.getch()
-        if ch == ord('j') and task_list:
-            selected_idx = (selected_idx + 1) % len(task_list)
+                # Handle terminal resize
+        if ch == curses.KEY_RESIZE:
+            height, width = stdscr.getmaxyx()
+            window.clear()
+            window.resize(height, width)
+            window.refresh()
+            # Adjust top_idx to ensure the selected item is within the new visible range
+            top_idx = max(0, min(selected_idx, len(task_list) - (height - 4)))
+
+        elif ch == ord('j') and task_list:
+            selected_idx = min(selected_idx + 1, len(task_list) - 1)
+            if selected_idx >= top_idx + height - 4:
+                top_idx += 1
 
         elif ch == ord('k') and task_list:
-            selected_idx = (selected_idx - 1) % len(task_list)
+            selected_idx = max(selected_idx - 1, 0)
+            if selected_idx < top_idx:
+                top_idx -= 1
+
+        elif ch == ord('g'):
+            # Wait for the second 'g' to be pressed
+            ch = window.getch()
+            if ch == ord('g'):
+                selected_idx = 0
+                top_idx = 0
+
+        elif ch == ord('G'):
+            selected_idx = len(task_list) - 1
+            top_idx = max(0, len(task_list) - (height - 4))
 
         elif ch == ord('\t'):
             tab = "done" if tab == "todo" else "todo"
@@ -131,6 +159,11 @@ def main(stdscr):
             if task_name:  # Check if the task name is not empty
                 tasks.append(Task(task_name))
                 save_tasks(tasks)
+                # Set selected_idx to 0 to select the first item
+                selected_idx = 0
+                # If the list was empty before adding, set top_idx to 0
+                if len(task_list) == 0:
+                    top_idx = 0
 
         elif ch == ord('r') and task_list:
             task_name = prompt_for_task_name(
@@ -140,10 +173,15 @@ def main(stdscr):
                 save_tasks(tasks)
 
         elif ch == ord('d') and task_list:
-            del task_list[selected_idx]
-            tasks = todos + dones
-            save_tasks(tasks)
-            selected_idx -= 1
+            if 0 <= selected_idx < len(task_list):
+                del task_list[selected_idx]
+                tasks = todos + dones
+                save_tasks(tasks)
+                # After deletion, adjust selected_idx if it's now out of range
+                selected_idx = min(selected_idx, len(task_list) - 1)
+            else:
+                # If selected_idx is out of range, reset it to the last item
+                selected_idx = len(task_list) - 1
 
         elif ch == ord('q'):
             break
